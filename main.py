@@ -1,5 +1,8 @@
 import tkinter
 from tkinter import ttk
+from docxtpl import DocxTemplate
+import datetime
+from tkinter import messagebox
 
 
 def clear_item():
@@ -8,6 +11,9 @@ def clear_item():
     description_entry.delete(0, tkinter.END)
     unit_price_entry.delete(0, tkinter.END)
     unit_price_entry.insert(0, "0.0")
+
+
+invoice_list = []
 
 
 def add_item():
@@ -19,6 +25,7 @@ def add_item():
 
     tree.insert('', 0, values=invoice_item)
     clear_item()
+    invoice_list.append(invoice_item)
 
 
 def new_invoice():
@@ -27,6 +34,25 @@ def new_invoice():
     phone_entry.delete(0, tkinter.END)
     clear_item()
     tree.delete(*tree.get_children())
+    invoice_list.clear()
+
+
+def generate_invoice():
+    doc = DocxTemplate("invoice_template.docx")
+    name = first_name_entry.get() + " " + last_name_entry.get()
+    phone = phone_entry.get()
+    subtotal = sum(item[3] for item in invoice_list)
+    salestax = 0.05
+    total = subtotal * (1 + salestax)
+    new_total = round(total, 2)
+
+    doc.render({"name": name, "phone": phone, "invoice_list": invoice_list, "subtotal": subtotal,
+                "salestax": str(salestax * 100) + "%", "total": new_total})
+    doc_name = "new_invoice" + name + datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S") + ".docx"
+    doc.save(doc_name)
+
+    messagebox.showinfo("Invoice Complete", "Invoice Generated")
+    new_invoice()
 
 
 window = tkinter.Tk()
@@ -81,7 +107,7 @@ tree.heading('Total', text='Total')
 
 tree.grid(row=5, column=0, columnspan=3, padx=20, pady=10)
 
-generate_button = tkinter.Button(frame, text="Generate Invoice")
+generate_button = tkinter.Button(frame, text="Generate Invoice", command=generate_invoice)
 generate_button.grid(row=6, column=0, columnspan=3, sticky="ew", padx=20, pady=5)
 
 new_button = tkinter.Button(frame, text="New Invoice", command=new_invoice)
